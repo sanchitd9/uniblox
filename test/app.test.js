@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app, store } from './app.js';
+import { app, store } from '../src/app.js';
 
 // Reset store before each test
 function resetStore() {
