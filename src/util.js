@@ -10,7 +10,7 @@ export const N = 3;
 export const DISCOUNT_RATE = 0.1;
 
 export function loadProducts(store) {
-  const filePath = path.join(__dirname, "data", "products.json");
+  const filePath = path.join(__dirname, "..", "data", "products.json");
   store.products = JSON.parse(fs.readFileSync(filePath), "utf-8");
 }
 
