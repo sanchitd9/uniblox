@@ -20,10 +20,7 @@ export default function ItemsGrid() {
       {items.map((item) => (
         <Item
           key={item.id}
-          image="https://picsum.photos/id/9/367/267"
-          description={item.description}
-          price={item.price}
-          name={item.name}
+          item={item}
         />
       ))}
     </div>
