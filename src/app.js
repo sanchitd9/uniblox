@@ -1,11 +1,15 @@
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
 import { loadProducts, calculateCartTotal, generateDiscountCode, DISCOUNT_RATE, N, generateStats } from "./util.js";
 
 const app = express();
 const PORT = 3000;
 
 // Middleware
+app.use(cors({
+  origin: "http://localhost:5173"
+}));
 app.use(bodyParser.json());
 
 // Storing order + cart data in memory
