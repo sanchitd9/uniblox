@@ -95,6 +95,35 @@ app.post("/api/cart/add", (req, res, next) => {
   }
 });
 
+// Remove item from cart
+app.post("/api/cart/remove", (req, res, next) => {
+  try {
+    const { productId, quantity } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({ error: "productId is required" });
+    }
+
+    const existingItem = store.cart.items.find(item => item.productId === productId);
+
+    if (!existingItem) {
+      return res.status(404).json({ error: "Item not found in cart" });
+    }
+
+    const removeQuantity = quantity || existingItem.quantity;
+
+    if (removeQuantity >= existingItem.quantity) {
+      store.cart.items = store.cart.items.filter(item => item.productId !== productId);
+    } else {
+      existingItem.quantity -= removeQuantity;
+    }
+
+    return res.status(200).json(store.cart);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Checkout
 app.post("/api/checkout", (req, res, next) => {
   try {

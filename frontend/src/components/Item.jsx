@@ -16,6 +16,20 @@ export default function Item({ item }) {
     setQuantity(quantity + 1);
   };
 
+  const handleRemove = async () => {
+    if (quantity <= 0) return;
+    const response = await fetch("http://localhost:3000/api/cart/remove", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ productId: item.id, quantity: 1 }),
+    });
+    const data = await response.json();
+    console.log(data);
+    setQuantity(quantity - 1);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <img
@@ -30,11 +44,19 @@ export default function Item({ item }) {
           <p className="text-lg font-semibold text-gray-900">${item.price.toFixed(2)}</p>
           <div className="flex items-center gap-2">
             {quantity > 0 && (
-              <span className="text-lg font-medium w-6 text-center">{quantity}</span>
+              <>
+                <button
+                  onClick={handleRemove}
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold cursor-pointer"
+                >
+                  -
+                </button>
+                <span className="text-lg font-medium w-6 text-center">{quantity}</span>
+              </>
             )}
             <button
               onClick={handleAdd}
-              className="bg-teal-500 hover:bg-teal-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold"
+              className="bg-teal-500 hover:bg-teal-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold cursor-pointer"
             >
               +
             </button>
