@@ -195,4 +195,4 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT);
+export { app, store };
