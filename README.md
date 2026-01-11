@@ -17,23 +17,25 @@
 ## Installation
 
 ```bash
-npm install
+make install
 ```
+
+This installs dependencies for both the backend and frontend.
 
 ## Usage
 
-### Start Server
+### Start Both Servers
 
 ```bash
-npm start
+make start
 ```
 
-Server runs on `http://localhost:3000`
+This starts both the backend (port 3000) and frontend servers in the background.
 
-### Development Mode
+### Stop Servers
 
 ```bash
-npm run dev
+make stop
 ```
 
 ### Run Tests
