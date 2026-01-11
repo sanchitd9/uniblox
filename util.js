@@ -28,3 +28,12 @@ export function generateDiscountCode() {
 
   return code.slice(0, 4) + "-" + code.slice(4);
 }
+
+export function generateStats(orders) {
+  return orders.reduce((acc, order) => {
+    acc.totalCount += order.items.reduce((sum, item) => sum + item.quantity, 0);
+    acc.totalAmount += order.totalAmount;
+    acc.totalDiscount += order.discount;
+    return acc;
+  }, { totalCount: 0, totalAmount: 0, totalDiscount: 0 });
+}

@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import { loadProducts, calculateCartTotal, generateDiscountCode, DISCOUNT_RATE, N } from "./util.js";
+import { loadProducts, calculateCartTotal, generateDiscountCode, DISCOUNT_RATE, N, generateStats } from "./util.js";
 
 const app = express();
 const PORT = 3000;
@@ -13,7 +13,6 @@ const store = {
   products: [],
   cart: { items: [] },
   orders: [],
-  orderCount: 0,
   discountCodes: [],
 };
 
@@ -35,12 +34,12 @@ app.get("/api/products", (req, res) => {
 // View Cart
 app.get("/api/cart", (req, res) => {
   const subtotal = calculateCartTotal(store.cart);
-  const isDiscountEligible = (store.orderCount + 1) % N === 0;
+  const discountEligible = (store.orders.length + 1) % N === 0;
 
   const response = {
     items: store.cart.items,
     subtotal,
-    discountEligible: isDiscountEligible,
+    discountEligible,
   };
 
   return res.json(response);
@@ -50,10 +49,18 @@ app.get("/api/cart", (req, res) => {
 app.post("/api/cart/add", (req, res) => {
   const { productId, quantity } = req.body;
 
+  if (!productId || !quantity) {
+    return res.status(400).json({ error: "productId and quantity are required" });
+  }
+
+  if (typeof quantity !== "number" || quantity <= 0) {
+    return res.status(400).json({ error: "quantity must be a positive number" });
+  }
+
   const product = store.products.find(p => p.id === productId);
 
   if (!product) {
-    return res.status(404);
+    return res.status(404).json({ error: "Product not found" });
   }
 
   const existingItem = store.cart.items.find(item => item.productId === productId);
@@ -69,16 +76,32 @@ app.post("/api/cart/add", (req, res) => {
     });
   }
 
-  return res.json(store.cart);
+  return res.status(200).json(store.cart);
 });
 
 // Checkout
 app.post("/api/checkout", (req, res) => {
+  if (store.cart.items.length === 0) {
+    return res.status(400).json({ error: "Cart is empty" });
+  }
+
   const { discountCode } = req.body;
   const subtotal = calculateCartTotal(store.cart);
   let discount = 0;
 
   if (discountCode) {
+    const isNthOrder = (store.orders.length + 1) % N === 0;
+    const expectedCodeIndex = Math.floor(store.orders.length / N);
+    const isValidCode = store.discountCodes[expectedCodeIndex] === discountCode;
+
+    if (!isNthOrder) {
+      return res.status(400).json({ error: "Discount code not applicable for this order" });
+    }
+
+    if (!isValidCode) {
+      return res.status(400).json({ error: "Invalid discount code" });
+    }
+
     discount = subtotal * DISCOUNT_RATE;
   }
 
@@ -86,7 +109,7 @@ app.post("/api/checkout", (req, res) => {
 
   // Create the order
   const order = {
-    orderId: `ORDER${store.orderCount}`,
+    orderId: `ORDER${store.orders.length + 1}`,
     items: [...store.cart.items],
     subtotal,
     discount,
@@ -94,34 +117,42 @@ app.post("/api/checkout", (req, res) => {
     totalAmount
   };
 
-  store.orderCount++;
-
   // Add it to the store
   store.orders.push(order);
 
   // Clear the cart
   store.cart.items = [];
 
-  return res.json({
+  return res.status(201).json({
     message: "Order placed successfully",
     order
   });
 });
 
 // Admin API routes
-app.get("/api/admin/generateCode", (req, res) => {
+app.post("/api/admin/generateCode", (req, res) => {
+  const isNthOrder = (store.orders.length + 1) % N === 0;
+
+  if (!isNthOrder) {
+    return res.status(400).json({ error: "Discount code cannot be generated for this order" });
+  }
+
+  const nthOrderIndex = Math.floor(store.orders.length / N);
+
+  if (nthOrderIndex < store.discountCodes.length) {
+    return res.status(200).json({ code: store.discountCodes[nthOrderIndex] });
+  }
+
   const code = generateDiscountCode();
   store.discountCodes.push(code);
 
-  return res.json(code);
+  return res.status(201).json({ code });
 });
 
 app.get("/api/admin/stats", (req, res) => {
-  const totalCount = store.orders.reduce((total, order) => total + order.items.reduce((subTotal, item) => subTotal + item.quantity, 0), 0);
-  const totalAmount = store.orders.reduce((total, order) => total + order.totalAmount, 0);
-  const totalDiscount = store.orders.reduce((total, order) => total + order.discount, 0);
+  const { totalCount, totalAmount, totalDiscount } = generateStats(store.orders);
 
-  return res.json({
+  return res.status(200).json({
     totalCount,
     totalAmount,
     discountCodes: store.discountCodes,
