@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import { loadProducts, calculateCartTotal, generateDiscountCode, DISCOUNT_RATE, N, generateStats } from "../util.js";
+import { loadProducts, calculateCartTotal, generateDiscountCode, DISCOUNT_RATE, N, generateStats } from "./util.js";
 
 const app = express();
 const PORT = 3000;
