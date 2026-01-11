@@ -88,14 +88,14 @@ export default function Cart({ isOpen, onClose }) {
           {cart.discountEligible && !discountCode && (
             <button
               onClick={handleApplyCoupon}
-              className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-medium mb-2 cursor-pointer"
+              className="w-full bg-amber-400 hover:bg-amber-500 text-gray-900 py-2 rounded-lg font-medium mb-2 cursor-pointer"
             >
               Apply Coupon
             </button>
           )}
           {discountCode && (
             <div className="mb-2">
-              <div className="flex justify-between items-center text-green-600">
+              <div className="flex justify-between items-center text-teal-600">
                 <span className="text-sm">Discount ({discountCode})</span>
                 <span className="font-semibold">-${discount.toFixed(2)}</span>
               </div>
@@ -107,7 +107,7 @@ export default function Cart({ isOpen, onClose }) {
           )}
           <button
             onClick={handleCheckout}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-medium cursor-pointer"
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg font-medium cursor-pointer"
           >
             Checkout
           </button>

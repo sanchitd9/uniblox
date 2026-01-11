@@ -34,7 +34,7 @@ export default function Item({ item }) {
             )}
             <button
               onClick={handleAdd}
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold"
+              className="bg-teal-500 hover:bg-teal-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold"
             >
               +
             </button>
