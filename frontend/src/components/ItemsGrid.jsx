@@ -23,6 +23,7 @@ export default function ItemsGrid() {
           image="https://picsum.photos/id/9/367/267"
           description={item.description}
           price={item.price}
+          name={item.name}
         />
       ))}
     </div>
