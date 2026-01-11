@@ -27,137 +27,172 @@ app.get("/", (req, res) => {
 });
 
 // Get all products
-app.get("/api/products", (req, res) => {
-  return res.json(store.products);
+app.get("/api/products", (req, res, next) => {
+  try {
+    return res.json(store.products);
+  } catch (error) {
+    next(error);
+  }
 });
 
 // View Cart
-app.get("/api/cart", (req, res) => {
-  const subtotal = calculateCartTotal(store.cart);
-  const discountEligible = (store.orders.length + 1) % N === 0;
+app.get("/api/cart", (req, res, next) => {
+  try {
+    const subtotal = calculateCartTotal(store.cart);
+    const discountEligible = (store.orders.length + 1) % N === 0;
 
-  const response = {
-    items: store.cart.items,
-    subtotal,
-    discountEligible,
-  };
+    const response = {
+      items: store.cart.items,
+      subtotal,
+      discountEligible,
+    };
 
-  return res.json(response);
+    return res.json(response);
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Add item to cart
-app.post("/api/cart/add", (req, res) => {
-  const { productId, quantity } = req.body;
+app.post("/api/cart/add", (req, res, next) => {
+  try {
+    const { productId, quantity } = req.body;
 
-  if (!productId || !quantity) {
-    return res.status(400).json({ error: "productId and quantity are required" });
+    if (!productId || !quantity) {
+      return res.status(400).json({ error: "productId and quantity are required" });
+    }
+
+    if (typeof quantity !== "number" || quantity <= 0) {
+      return res.status(400).json({ error: "quantity must be a positive number" });
+    }
+
+    const product = store.products.find(p => p.id === productId);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const existingItem = store.cart.items.find(item => item.productId === productId);
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      store.cart.items.push({
+        productId,
+        name: product.name,
+        price: product.price,
+        quantity
+      });
+    }
+
+    return res.status(200).json(store.cart);
+  } catch (error) {
+    next(error);
   }
-
-  if (typeof quantity !== "number" || quantity <= 0) {
-    return res.status(400).json({ error: "quantity must be a positive number" });
-  }
-
-  const product = store.products.find(p => p.id === productId);
-
-  if (!product) {
-    return res.status(404).json({ error: "Product not found" });
-  }
-
-  const existingItem = store.cart.items.find(item => item.productId === productId);
-
-  if (existingItem) {
-    existingItem.quantity += quantity;
-  } else {
-    store.cart.items.push({
-      productId,
-      name: product.name,
-      price: product.price,
-      quantity
-    });
-  }
-
-  return res.status(200).json(store.cart);
 });
 
 // Checkout
-app.post("/api/checkout", (req, res) => {
-  if (store.cart.items.length === 0) {
-    return res.status(400).json({ error: "Cart is empty" });
-  }
-
-  const { discountCode } = req.body;
-  const subtotal = calculateCartTotal(store.cart);
-  let discount = 0;
-
-  if (discountCode) {
-    const isNthOrder = (store.orders.length + 1) % N === 0;
-    const expectedCodeIndex = Math.floor(store.orders.length / N);
-    const isValidCode = store.discountCodes[expectedCodeIndex] === discountCode;
-
-    if (!isNthOrder) {
-      return res.status(400).json({ error: "Discount code not applicable for this order" });
+app.post("/api/checkout", (req, res, next) => {
+  try {
+    if (store.cart.items.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
     }
 
-    if (!isValidCode) {
-      return res.status(400).json({ error: "Invalid discount code" });
+    const { discountCode } = req.body;
+    const subtotal = calculateCartTotal(store.cart);
+    let discount = 0;
+
+    if (discountCode) {
+      const isNthOrder = (store.orders.length + 1) % N === 0;
+      const expectedCodeIndex = Math.floor(store.orders.length / N);
+      const isValidCode = store.discountCodes[expectedCodeIndex] === discountCode;
+
+      if (!isNthOrder) {
+        return res.status(400).json({ error: "Discount code not applicable for this order" });
+      }
+
+      if (!isValidCode) {
+        return res.status(400).json({ error: "Invalid discount code" });
+      }
+
+      discount = subtotal * DISCOUNT_RATE;
     }
 
-    discount = subtotal * DISCOUNT_RATE;
+    const totalAmount = subtotal - discount;
+
+    // Create the order
+    const order = {
+      orderId: `O${store.orders.length + 1}`,
+      items: [...store.cart.items],
+      subtotal,
+      discount,
+      discountCode,
+      totalAmount
+    };
+
+    // Add it to the store
+    store.orders.push(order);
+
+    // Clear the cart
+    store.cart.items = [];
+
+    return res.status(201).json({
+      message: "Order placed successfully",
+      order
+    });
+  } catch (error) {
+    next(error);
   }
-
-  const totalAmount = subtotal - discount;
-
-  // Create the order
-  const order = {
-    orderId: `ORDER${store.orders.length + 1}`,
-    items: [...store.cart.items],
-    subtotal,
-    discount,
-    discountCode,
-    totalAmount
-  };
-
-  // Add it to the store
-  store.orders.push(order);
-
-  // Clear the cart
-  store.cart.items = [];
-
-  return res.status(201).json({
-    message: "Order placed successfully",
-    order
-  });
 });
 
 // Admin API routes
-app.post("/api/admin/generateCode", (req, res) => {
-  const isNthOrder = (store.orders.length + 1) % N === 0;
+app.post("/api/admin/generateCode", (req, res, next) => {
+  try {
+    const isNthOrder = (store.orders.length + 1) % N === 0;
 
-  if (!isNthOrder) {
-    return res.status(400).json({ error: "Discount code cannot be generated for this order" });
+    if (!isNthOrder) {
+      return res.status(400).json({ error: "Discount code cannot be generated for this order" });
+    }
+
+    const nthOrderIndex = Math.floor(store.orders.length / N);
+
+    if (nthOrderIndex < store.discountCodes.length) {
+      return res.status(200).json({ code: store.discountCodes[nthOrderIndex] });
+    }
+
+    const code = generateDiscountCode();
+    store.discountCodes.push(code);
+
+    return res.status(201).json({ code });
+  } catch (error) {
+    next(error);
   }
-
-  const nthOrderIndex = Math.floor(store.orders.length / N);
-
-  if (nthOrderIndex < store.discountCodes.length) {
-    return res.status(200).json({ code: store.discountCodes[nthOrderIndex] });
-  }
-
-  const code = generateDiscountCode();
-  store.discountCodes.push(code);
-
-  return res.status(201).json({ code });
 });
 
-app.get("/api/admin/stats", (req, res) => {
-  const { totalCount, totalAmount, totalDiscount } = generateStats(store.orders);
+app.get("/api/admin/stats", (req, res, next) => {
+  try {
+    const { totalCount, totalAmount, totalDiscount } = generateStats(store.orders);
 
-  return res.status(200).json({
-    totalCount,
-    totalAmount,
-    discountCodes: store.discountCodes,
-    totalDiscount
-  });
+    return res.status(200).json({
+      totalCount,
+      totalAmount,
+      discountCodes: store.discountCodes,
+      totalDiscount
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// 404 handler for unknown routes
+app.use((req, res) => {
+  return res.status(404).json({ error: "Route not found" });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  return res.status(500).json({ error: "Internal server error" });
 });
 
 app.listen(PORT);
