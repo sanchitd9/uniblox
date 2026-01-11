@@ -43,14 +43,6 @@ app.get("/api/cart", (req, res) => {
     discountEligible: isDiscountEligible,
   };
 
-  if (isDiscountEligible) {
-    // Generate a discount code for this eligible order
-    const code = generateDiscountCode();
-    store.discountCodes.push(code);
-    response.discountCode = code;
-    response.discountPercent = DISCOUNT_RATE;
-  }
-
   return res.json(response);
 });
 
@@ -113,6 +105,27 @@ app.post("/api/checkout", (req, res) => {
   return res.json({
     message: "Order placed successfully",
     order
+  });
+});
+
+// Admin API routes
+app.get("/api/admin/generateCode", (req, res) => {
+  const code = generateDiscountCode();
+  store.discountCodes.push(code);
+
+  return res.json(code);
+});
+
+app.get("/api/admin/stats", (req, res) => {
+  const totalCount = store.orders.reduce((total, order) => total + order.items.reduce((subTotal, item) => subTotal + item.quantity, 0), 0);
+  const totalAmount = store.orders.reduce((total, order) => total + order.totalAmount, 0);
+  const totalDiscount = store.orders.reduce((total, order) => total + order.discount, 0);
+
+  return res.json({
+    totalCount,
+    totalAmount,
+    discountCodes: store.discountCodes,
+    totalDiscount
   });
 });
 
