@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Cart from "./Cart";
 
-export default function Header() {
+export default function Header({ onCheckoutComplete }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
@@ -15,7 +15,11 @@ export default function Header() {
           Cart
         </button>
       </header>
-      <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <Cart
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        onCheckoutComplete={onCheckoutComplete}
+      />
     </>
   );
 }

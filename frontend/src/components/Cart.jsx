@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 const DISCOUNT_RATE = 0.1;
 
-export default function Cart({ isOpen, onClose }) {
+export default function Cart({ isOpen, onClose, onCheckoutComplete }) {
   const [cart, setCart] = useState({ items: [], subtotal: 0, discountEligible: false });
   const [discountCode, setDiscountCode] = useState(null);
   const [discount, setDiscount] = useState(0);
@@ -41,6 +41,7 @@ export default function Cart({ isOpen, onClose }) {
     const data = await response.json();
     if (response.ok) {
       alert(data.message);
+      onCheckoutComplete?.();
       onClose();
     } else {
       alert(data.error);
