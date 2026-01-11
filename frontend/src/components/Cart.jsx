@@ -89,7 +89,8 @@ export default function Cart({ isOpen, onClose, onCheckoutComplete }) {
           {cart.discountEligible && !discountCode && (
             <button
               onClick={handleApplyCoupon}
-              className="w-full bg-amber-400 hover:bg-amber-500 text-gray-900 py-2 rounded-lg font-medium mb-2 cursor-pointer"
+              disabled={cart.items.length === 0}
+              className="w-full bg-amber-400 hover:bg-amber-500 text-gray-900 py-2 rounded-lg font-medium mb-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Apply Coupon
             </button>
@@ -108,7 +109,8 @@ export default function Cart({ isOpen, onClose, onCheckoutComplete }) {
           )}
           <button
             onClick={handleCheckout}
-            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg font-medium cursor-pointer"
+            disabled={cart.items.length === 0}
+            className="w-full bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Checkout
           </button>
