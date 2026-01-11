@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-import { loadProducts } from "./util.js";
+import { loadProducts, calculateCartTotal, generateDiscountCode, DISCOUNT_RATE, N } from "./util.js";
 
 const app = express();
 const PORT = 3000;
@@ -13,7 +13,8 @@ const store = {
   products: [],
   cart: { items: [] },
   orders: [],
-  orderCount: 0
+  orderCount: 0,
+  discountCodes: [],
 };
 
 // Load products from json.
@@ -33,7 +34,24 @@ app.get("/api/products", (req, res) => {
 
 // View Cart
 app.get("/api/cart", (req, res) => {
-  return res.json(store.cart);
+  const subtotal = calculateCartTotal(store.cart);
+  const isDiscountEligible = (store.orderCount + 1) % N === 0;
+
+  const response = {
+    items: store.cart.items,
+    subtotal,
+    discountEligible: isDiscountEligible,
+  };
+
+  if (isDiscountEligible) {
+    // Generate a discount code for this eligible order
+    const code = generateDiscountCode();
+    store.discountCodes.push(code);
+    response.discountCode = code;
+    response.discountPercent = DISCOUNT_RATE;
+  }
+
+  return res.json(response);
 });
 
 // Add item to cart
@@ -65,17 +83,26 @@ app.post("/api/cart/add", (req, res) => {
 // Checkout
 app.post("/api/checkout", (req, res) => {
   const { discountCode } = req.body;
+  const subtotal = calculateCartTotal(store.cart);
+  let discount = 0;
 
-  store.orderCount++;
+  if (discountCode) {
+    discount = subtotal * DISCOUNT_RATE;
+  }
 
-  const totalAmount = calculateCartTotal();
+  const totalAmount = subtotal - discount;
 
   // Create the order
   const order = {
     orderId: `ORDER${store.orderCount}`,
     items: [...store.cart.items],
+    subtotal,
+    discount,
+    discountCode,
     totalAmount
   };
+
+  store.orderCount++;
 
   // Add it to the store
   store.orders.push(order);
@@ -86,7 +113,7 @@ app.post("/api/checkout", (req, res) => {
   return res.json({
     message: "Order placed successfully",
     order
-  })
+  });
 });
 
 app.listen(PORT);
