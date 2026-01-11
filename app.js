@@ -1,28 +1,23 @@
 import express from "express";
 import bodyParser from "body-parser";
-import fs from "fs";
+import { loadProducts } from "./util.js";
 
 const app = express();
 const PORT = 3000;
-
-function loadProducts() {
-  const products = JSON.parse(fs.readFileSync("data/products.json"));
-  return products;
-}
-
-function calculateCartTotal() {
-  return store.cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-}
 
 // Middleware
 app.use(bodyParser.json());
 
 // Storing order + cart data in memory
 const store = {
+  products: [],
   cart: { items: [] },
   orders: [],
   orderCount: 0
 };
+
+// Load products from json.
+loadProducts(store);
 
 // Sanity check
 app.get("/", (req, res) => {
@@ -33,22 +28,19 @@ app.get("/", (req, res) => {
 
 // Get all products
 app.get("/api/products", (req, res) => {
-  const products = loadProducts();
-  return res.json(products);
+  return res.json(store.products);
 });
 
 // View Cart
 app.get("/api/cart", (req, res) => {
   return res.json(store.cart);
-})
+});
 
 // Add item to cart
 app.post("/api/cart/add", (req, res) => {
   const { productId, quantity } = req.body;
 
-  const products = loadProducts();
-  const product = products.find(p => p.id === productId);
-  console.log(product);
+  const product = store.products.find(p => p.id === productId);
 
   if (!product) {
     return res.status(404);
